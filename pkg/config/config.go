@@ -17,11 +17,13 @@ var Debug bool
 
 // ServiceModel 定义相关结构体
 type ServiceModel struct {
-	Models      []string          `json:"models"`
-	Enabled     bool              `json:"enabled"`
-	Credentials map[string]string `json:"credentials"`
-	ServerURL   string            `json:"server_url"`
-	ModelMap    map[string]string `json:"model_map"`
+	Models          []string          `json:"models"`
+	Enabled         bool              `json:"enabled"`
+	Credentials     map[string]string `json:"credentials"`
+	ServerURL       string            `json:"server_url"`
+	ModelMap        map[string]string `json:"model_map"`
+	ResourceName    string            `json:"resource_name"`
+	DeploymentNames []string          `json:"deployment_names"`
 }
 
 type Configuration struct {

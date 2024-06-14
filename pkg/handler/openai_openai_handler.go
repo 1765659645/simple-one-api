@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/sashabaranov/go-openai"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +14,9 @@ import (
 	"simple-one-api/pkg/config"
 	"simple-one-api/pkg/utils"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/sashabaranov/go-openai"
 )
 
 // validateAndFormatURL checks if the given URL matches the specified formats and returns the formatted URL
@@ -144,11 +145,24 @@ func OpenAI2OpenAIHandler(c *gin.Context, s *config.ModelDetails, req openai.Cha
 
 // getAzureConfig generates the OpenAI client configuration for Azure based on model details and request
 func getAzureConfig(s *config.ModelDetails) (openai.ClientConfig, error) {
-	apiKey := s.Credentials[config.KEYNAME_API_KEY]
-	conf := openai.DefaultAzureConfig(apiKey, s.ServerURL)
+	// 确保s.Models和s.DeploymentNames长度相等
+	if len(s.Models) != len(s.DeploymentNames) {
+		log.Fatal("The length of s.Models and s.DeploymentNames must be the same.")
+	}
 
-	if s.ServerURL == "" {
-		return conf, errors.New("server URL is empty")
+	apiKey := s.Credentials[config.KEYNAME_API_KEY]
+	conf := openai.DefaultAzureConfig(apiKey, "https://"+s.ResourceName+".openai.azure.com/")
+
+	conf.AzureModelMapperFunc = func(model string) string {
+		// 创建一个匿名函数内部的映射以保持每次调用时的最新状态不是必要的，
+		// 因为我们可以在外部创建映射并根据s.Models和s.DeploymentNames填充它。
+		azureModelMapping := make(map[string]string)
+		for i, modelName := range s.Models {
+			azureModelMapping[modelName] = s.DeploymentNames[i]
+		}
+
+		// 返回与model对应的部署名称，如果model不在映射中，则返回空字符串或其他默认处理
+		return azureModelMapping[model]
 	}
 
 	return conf, nil
